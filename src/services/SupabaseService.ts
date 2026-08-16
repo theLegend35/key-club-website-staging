@@ -2875,13 +2875,14 @@ class SupabaseService {
     const storagePath = `${pathSegments.join('/')}/${finalFileName}`.replace(/\/+/g, '/');
 
     const bytes = this.base64ToUint8Array(params.base64Data);
+    const mimeType = params.mimeType || 'image/jpeg';
+    const file = new File([bytes], finalFileName, { type: mimeType });
 
-    // Pass raw bytes. A Blob/File is wrapped in multipart FormData by supabase-js,
-    // and Storage then saves the form wrapper instead of the JPEG.
+    // Do not set contentType here. supabase-js wraps File in FormData; overriding
+    // Content-Type to image/jpeg stores the multipart wrapper instead of the JPEG.
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(storagePath, bytes, {
-        contentType: params.mimeType || 'image/jpeg',
+      .upload(storagePath, file, {
         upsert: true
       });
 

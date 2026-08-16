@@ -1,4 +1,5 @@
 import type { Handler } from '@netlify/functions';
+import { Readable } from 'node:stream';
 import { google } from 'googleapis';
 
 const SERVICE_ACCOUNT_SCOPE = 'https://www.googleapis.com/auth/drive.file';
@@ -105,7 +106,7 @@ const handler: Handler = async (event) => {
       requestBody: fileMetadata,
       media: {
         mimeType,
-        body: buffer
+        body: Readable.from(buffer)
       },
       fields: 'id, webViewLink',
       supportsAllDrives: true
