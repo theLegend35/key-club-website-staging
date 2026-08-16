@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authentication Callback</title>
+    <script>
+        // Handle OAuth callback
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const error = urlParams.get('error');
+            
+            if (error) {
+                console.error('OAuth error:', error);
+                window.close();
+                return;
+            }
+            
+            if (code) {
+                console.log('OAuth code received:', code);
+                
+                        // Store the code in localStorage for the main app to pick up
+        localStorage.setItem('oauth_code', code);
+        localStorage.setItem('oauth_timestamp', Date.now().toString());
+        
+        // Show success message
+        document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>✅ Authentication Complete!</h2><p>Closing this window...</p></div>';
+        
+        // Close the popup window after a short delay
+        setTimeout(() => {
+            window.close();
+        }, 2000);
+            } else {
+                console.error('No OAuth code received');
+                window.close();
+            }
+        };
+    </script>
+</head>
+<body>
+    <div style="text-align: center; padding: 50px;">
+        <h2>Completing Authentication...</h2>
+        <p>Please wait while we complete your Google authentication.</p>
+    </div>
+</body>
+</html> 
