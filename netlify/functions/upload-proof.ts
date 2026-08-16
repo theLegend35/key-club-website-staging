@@ -1,11 +1,7 @@
 import type { Handler } from '@netlify/functions';
 import { google } from 'googleapis';
 
-const REQUIRED_ENV_VARS = [
-  'GOOGLE_SERVICE_ACCOUNT_EMAIL',
-  'GOOGLE_SERVICE_ACCOUNT_KEY',
-  'GOOGLE_DRIVE_FOLDER_ID'
-] as const;
+const SERVICE_ACCOUNT_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,29 +9,42 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+const getFolderId = () => {
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!folderId) {
+    throw new Error('Missing GOOGLE_DRIVE_FOLDER_ID');
+  }
+  return folderId;
+};
+
 const getDriveClient = async () => {
-  for (const key of REQUIRED_ENV_VARS) {
-    if (!process.env[key]) {
-      throw new Error(`Missing required environment variable: ${key}`);
-    }
+  const folderId = getFolderId();
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  if (clientId && clientSecret && refreshToken) {
+    const auth = new google.auth.OAuth2(clientId, clientSecret);
+    auth.setCredentials({ refresh_token: refreshToken });
+    return { drive: google.drive({ version: 'v3', auth }), folderId };
   }
 
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL as string;
-  const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY as string;
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID as string;
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const privateKeyRaw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
 
-  const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+  if (clientEmail && privateKeyRaw) {
+    const auth = new google.auth.JWT({
+      email: clientEmail,
+      key: privateKeyRaw.replace(/\\n/g, '\n'),
+      scopes: [SERVICE_ACCOUNT_SCOPE],
+      subject: clientEmail
+    });
+    return { drive: google.drive({ version: 'v3', auth }), folderId };
+  }
 
-  const auth = new google.auth.JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: ['https://www.googleapis.com/auth/drive.file'],
-    subject: clientEmail
-  });
-
-  const drive = google.drive({ version: 'v3', auth });
-
-  return { drive, folderId };
+  throw new Error(
+    'Missing Google Drive auth. For a personal Gmail bot, set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, and GOOGLE_DRIVE_FOLDER_ID. A Gmail password will not work.'
+  );
 };
 
 const handler: Handler = async (event) => {

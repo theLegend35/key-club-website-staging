@@ -7,7 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "google:auth": "tsx scripts/google-drive-oauth.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.10",
