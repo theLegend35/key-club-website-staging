@@ -1110,38 +1110,11 @@ class SupabaseService {
     pageSize: number = 25  // Reduced from 50 to 25 to reduce egress
   ) {
     try {
-      // Table has 15 columns total:
-      // id, student_s_number, student_name, event_name, event_date, hours_requested, 
-      // description, status, submitted_at, reviewed_at, reviewed_by, admin_notes, 
-      // proof_image_url, image_name, type
-      // We're only requesting 12 to save bandwidth (excluding description, admin_notes, proof_image_url)
-      const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name';
-      console.log(`📊 Querying hour_requests table - Requested columns (12 of 15):`, requestedColumns);
-      console.log(`📊 Missing columns: description, admin_notes, proof_image_url`);
-      
-      // First, let's check what ALL columns exist by querying one row with select('*')
-      const { data: sampleData, error: sampleError } = await supabase
-        .from('hour_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .limit(1)
-        .maybeSingle();
-      
-      if (sampleData && !sampleError) {
-        const allColumns = Object.keys(sampleData);
-        console.log(`📊 ALL columns in hour_requests table (${allColumns.length} total):`, allColumns);
-        console.log(`📊 Expected 15 columns, found ${allColumns.length} columns`);
-        console.log(`📊 Complete column list:`, allColumns);
-      } else if (sampleError && sampleError.code !== 'PGRST116') {
-        console.warn(`⚠️ Could not fetch sample row to check all columns:`, sampleError.message);
-      }
-      
+      const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name, description';
+
       let query = supabase
         .from('hour_requests')
-        .select(
-          // Exclude description to reduce load - images loaded on-demand via button
-          requestedColumns
-        )
+        .select(requestedColumns)
         .eq('status', 'pending')
         // ASC order so Postgres can walk the index efficiently
         .order('submitted_at', { ascending: true })
@@ -1228,12 +1201,12 @@ class SupabaseService {
       // - all → query both tables and combine
       
       if (status === 'all') {
-        const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name';
+        const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name, description';
         console.log(`📊 Searching both tables (all status) - Requested columns:`, requestedColumns);
         
         // Query both tables and combine results
         const [pendingData, archiveData] = await Promise.all([
-          // Query pending from main table (exclude description to reduce load)
+          // Query pending from main table
           supabase
             .from('hour_requests')
             .select(requestedColumns)
@@ -1242,7 +1215,7 @@ class SupabaseService {
             .order('submitted_at', { ascending: true })
             .limit(limit),
           
-          // Query approved/rejected from archive table (exclude description to reduce load)
+          // Query approved/rejected from archive table
           supabase
             .from('hour_requests_archive')
             .select(requestedColumns)
@@ -1299,10 +1272,8 @@ class SupabaseService {
       // Query single table based on status
       const tableName = status === 'pending' ? 'hour_requests' : 'hour_requests_archive';
       
-      const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name';
+      const requestedColumns = 'id, student_s_number, student_name, event_name, event_date, hours_requested, type, status, submitted_at, reviewed_at, reviewed_by, image_name, description';
       console.log(`📊 Searching ${tableName} table - Requested columns:`, requestedColumns);
-      
-      // Exclude description to reduce load - images loaded on-demand via button
       let query = supabase
         .from(tableName)
         .select(requestedColumns)

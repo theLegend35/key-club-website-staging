@@ -6,6 +6,7 @@ import { useModal } from '../contexts/ModalContext';
 import SupabaseService from '../services/SupabaseService';
 import {
   cleanProofDescription,
+  driveThumbnailUrl,
   driveViewUrl,
   extractLegacyPhotoDataUrl,
   parseDriveToken,
@@ -715,7 +716,8 @@ export default function AdminHourManagementScreen() {
               const storageProof = loadedDescription ? parseStorageToken(loadedDescription) : null;
               const photoData = loadedDescription ? extractPhotoData(loadedDescription) : null;
               const storageUrl = storageProof ? SupabaseService.getProofStoragePublicUrl(storageProof) : null;
-              const imgSrc = photoData || storageUrl;
+              const driveThumb = driveProof ? driveThumbnailUrl(driveProof) : null;
+              const imgSrc = photoData || storageUrl || driveThumb;
               
               const cleanDescriptionText = loadedDescription ? cleanDescription(loadedDescription) : '';
               const isProcessing = processingRequests.has(request.id);
@@ -905,7 +907,12 @@ export default function AdminHourManagementScreen() {
                                 onClick={() => viewPhoto(request.event_name, imgSrc)}
                                 src={imgSrc}
                                 alt="Proof photo thumbnail"
-                                className="w-full h-auto max-h-64 object-contain rounded-lg cursor-pointer border border-slate-600 hover:border-blue-400 transition-colors"
+                                className="w-full h-auto max-h-64 object-contain rounded-lg cursor-pointer border border-slate-600 hover:border-blue-400 transition-colors bg-slate-900"
+                                onError={(event) => {
+                                  if (driveThumb && event.currentTarget.src !== driveThumb) {
+                                    event.currentTarget.src = driveThumb;
+                                  }
+                                }}
                               />
                             </div>
                           )}

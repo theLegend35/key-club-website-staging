@@ -4,6 +4,14 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useModal } from '../contexts/ModalContext';
 import SupabaseService from '../services/SupabaseService';
+import {
+  cleanProofDescription,
+  driveThumbnailUrl,
+  driveViewUrl,
+  extractLegacyPhotoDataUrl,
+  parseDriveToken,
+  parseStorageToken
+} from '../utils/proofPhoto';
 
 interface Student {
   id: string;
@@ -990,8 +998,38 @@ export default function AdminStudentDetailScreen() {
                     {(request.description || request.descriptions) && (
                       <div className="bg-slate-700 bg-opacity-50 rounded-lg p-4 mb-4">
                         <p className="text-gray-300 text-sm whitespace-pre-wrap">
-                          {(request.description || request.descriptions).replace(/\[PHOTO_DATA:.*?\]/g, '[Photo Attached]').replace(/\[PHOTO_STORAGE:.*?\]/g, '[Photo Attached]').replace(/\[PHOTO_DRIVE:.*?\]/g, '[Photo Attached]')}
+                          {cleanProofDescription(request.description || request.descriptions)}
                         </p>
+                        {(() => {
+                          const description = request.description || request.descriptions;
+                          const driveProof = parseDriveToken(description);
+                          const storageProof = parseStorageToken(description);
+                          const photoData = extractLegacyPhotoDataUrl(description);
+                          const storageUrl = storageProof ? SupabaseService.getProofStoragePublicUrl(storageProof) : null;
+                          const imgSrc = photoData || storageUrl || (driveProof ? driveThumbnailUrl(driveProof) : null);
+                          if (!imgSrc && !driveProof) return null;
+                          return (
+                            <div className="mt-3 space-y-2">
+                              {imgSrc && (
+                                <img
+                                  src={imgSrc}
+                                  alt="Proof photo"
+                                  className="w-full max-h-56 object-contain rounded-lg border border-slate-600 bg-slate-900"
+                                />
+                              )}
+                              {driveProof && (
+                                <a
+                                  href={driveViewUrl(driveProof)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex text-sm text-blue-400 hover:text-blue-300"
+                                >
+                                  Open in Google Drive
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
 

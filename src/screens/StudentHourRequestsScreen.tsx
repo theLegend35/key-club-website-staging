@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import SupabaseService from '../services/SupabaseService';
 import {
   cleanProofDescription,
+  driveThumbnailUrl,
   driveViewUrl,
   extractLegacyPhotoDataUrl,
   parseDriveToken,
@@ -204,7 +205,7 @@ export default function StudentHourRequestsScreen() {
               const storageProof = parseStorageToken(description);
               const photoData = extractPhotoData(description);
               const storageUrl = storageProof ? SupabaseService.getProofStoragePublicUrl(storageProof) : null;
-              const imgSrc = photoData || storageUrl;
+              const imgSrc = photoData || storageUrl || (driveProof ? driveThumbnailUrl(driveProof) : null);
               const cleanDescriptionText = cleanDescription(description);
 
               return (

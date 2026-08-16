@@ -117,6 +117,14 @@ export function driveViewUrl(info: DriveProofInfo): string {
   return info.webViewLink || `https://drive.google.com/file/d/${info.fileId}/view`;
 }
 
+export function driveThumbnailUrl(info: DriveProofInfo): string {
+  return `https://drive.google.com/thumbnail?id=${encodeURIComponent(info.fileId)}&sz=w1200`;
+}
+
+export function drivePreviewUrl(info: DriveProofInfo): string {
+  return `https://drive.google.com/file/d/${info.fileId}/preview`;
+}
+
 /**
  * Shrink a proof photo enough to stay under Netlify's function payload limit.
  * Falls back to the original file if canvas conversion fails.
@@ -134,7 +142,7 @@ export async function fileToProofPayload(file: File): Promise<{
   }
 
   try {
-    const resized = await resizeImageDataUrl(original, 1600, 0.85);
+    const resized = await resizeImageDataUrl(original, 1280, 0.72);
     const resizedParsed = parseDataUrl(resized);
     if (resizedParsed) {
       return {
